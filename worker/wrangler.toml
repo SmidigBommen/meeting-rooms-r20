@@ -1,0 +1,12 @@
+name = "meeting-room-worker"
+main = "src/index.js"
+compatibility_date = "2024-01-01"
+
+[vars]
+AZURE_TENANT_ID = "2dbe1820-db83-4e46-9695-e22f3d203174"
+AZURE_CLIENT_ID = "fe169d3f-b8b6-4906-87fd-57815548301d"
+
+[[kv_namespaces]]
+binding = "TOKEN_CACHE"
+id = "f06b8b0c27064550b713a668d050e164"
+preview_id = "9baf0ded24c24b05a801c2886d62ceb4"

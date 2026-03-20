@@ -437,80 +437,28 @@
 
     .tt-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
 
-    /* ── Connect panel ───────────────────────────────────────────── */
-    .connect-bar {
+    /* ── Status bar ──────────────────────────────────────────────── */
+    .status-bar {
       flex-shrink: 0;
       display: flex;
       align-items: center;
-      gap: 10px;
-      padding: 8px 28px;
+      gap: 8px;
+      padding: 6px 28px;
       background: var(--surface2);
       border-bottom: 1px solid var(--border);
-      font-size: 0.75rem;
-    }
-
-    .connect-bar.connected {
-      background: rgba(16,185,129,0.06);
-      border-bottom-color: rgba(16,185,129,0.15);
-    }
-
-    .connect-label {
-      color: var(--text-dim);
-      white-space: nowrap;
-    }
-
-    .connect-input {
-      flex: 1;
-      background: var(--surface3);
-      border: 1px solid var(--border);
-      border-radius: 7px;
-      padding: 5px 10px;
-      color: var(--text);
-      font-size: 0.72rem;
-      font-family: monospace;
-      outline: none;
-      min-width: 0;
-      transition: border-color 0.15s;
-    }
-
-    .connect-input:focus { border-color: var(--accent); }
-    .connect-input::placeholder { color: var(--text-mute); }
-
-    .connect-btn {
-      background: var(--accent);
-      border: none;
-      color: white;
-      padding: 5px 14px;
-      border-radius: 7px;
-      cursor: pointer;
-      font-size: 0.72rem;
-      font-weight: 600;
-      font-family: inherit;
-      white-space: nowrap;
-      transition: background 0.15s;
-    }
-
-    .connect-btn:hover { background: var(--accent2); }
-    .connect-btn.disconnect { background: rgba(244,63,94,0.2); color: #f43f5e; }
-    .connect-btn.disconnect:hover { background: rgba(244,63,94,0.35); }
-
-    .connect-status {
       font-size: 0.7rem;
-      white-space: nowrap;
-      display: flex;
-      align-items: center;
-      gap: 5px;
+      color: var(--text-dim);
     }
 
     .status-dot {
       width: 7px; height: 7px;
       border-radius: 50%;
       background: var(--text-mute);
+      flex-shrink: 0;
     }
 
-    .status-dot.live   { background: #10b981; box-shadow: 0 0 6px #10b981; }
-    .status-dot.sample { background: var(--text-mute); }
-    .status-dot.error  { background: #f43f5e; }
+    .status-dot.live    { background: #10b981; box-shadow: 0 0 6px #10b981; }
+    .status-dot.error   { background: #f43f5e; }
     .status-dot.loading { background: #f59e0b; animation: pulse-dot 1s infinite; }
 
     @keyframes pulse-dot {
@@ -551,15 +499,9 @@
   </div>
 </header>
 
-<div class="connect-bar" id="connectBar">
-  <span class="connect-label">Graph token</span>
-  <input class="connect-input" id="tokenInput" type="password"
-    placeholder="Paste Bearer token from OWA network tab…" autocomplete="off" spellcheck="false">
-  <button class="connect-btn" id="connectBtn">Connect</button>
-  <div class="connect-status">
-    <div class="status-dot sample" id="statusDot"></div>
-    <span id="statusText">Sample data</span>
-  </div>
+<div class="status-bar">
+  <div class="status-dot loading" id="statusDot"></div>
+  <span id="statusText">Connecting…</span>
 </div>
 
 <div class="stats-strip" id="statsStrip"></div>
@@ -572,6 +514,8 @@
 
 <script>
 // ── Config ────────────────────────────────────────────────────────────────────
+
+const WORKER_URL = 'https://calendar-20.workers.dev';
 
 const ROOMS = [
   { id:'easley',   name:'Easley',   email:'Moterom_Easley@soco.no',   capacity:4,  color:'#6366f1', textColor:'#c7d2fe', bgColor:'rgba(99,102,241,0.14)',  shadow:'rgba(99,102,241,0.3)' },
@@ -635,97 +579,26 @@ const BOOKINGS_FOR = dow =>
 // ── State ─────────────────────────────────────────────────────────────────────
 
 let dayOffset = 0;
-let bearerToken = localStorage.getItem('mrv_token') || null;
 
-// ── Graph API ─────────────────────────────────────────────────────────────────
+// ── Worker API ────────────────────────────────────────────────────────────────
 
 function setStatus(state, text) {
-  const dot  = document.getElementById('statusDot');
-  const span = document.getElementById('statusText');
-  const bar  = document.getElementById('connectBar');
-  dot.className  = `status-dot ${state}`;
-  span.textContent = text;
-  bar.className  = state === 'live' ? 'connect-bar connected' : 'connect-bar';
-  const btn = document.getElementById('connectBtn');
-  if (state === 'live') {
-    btn.textContent = 'Disconnect';
-    btn.className = 'connect-btn disconnect';
-  } else {
-    btn.textContent = 'Connect';
-    btn.className = 'connect-btn';
-  }
+  document.getElementById('statusDot').className = `status-dot ${state}`;
+  document.getElementById('statusText').textContent = text;
 }
 
 async function fetchLiveData(date) {
-  if (!bearerToken) return null;
-
-  const start = new Date(date); start.setHours(0, 0, 0, 0);
-  const end   = new Date(date); end.setHours(23, 59, 59, 0);
-  const fmt   = d => d.toISOString().replace(/\.\d+Z$/, '');
-  const dow   = date.getDay();
-
-  const results = [];
-
+  const iso = `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
   try {
-    await Promise.all(ROOMS.map(async room => {
-      const url = `https://graph.microsoft.com/v1.0/users/${room.email}/calendarView` +
-        `?startDateTime=${fmt(start)}&endDateTime=${fmt(end)}` +
-        `&$select=subject,start,end&$top=50`;
-
-      const res = await fetch(url, {
-        headers: { Authorization: `Bearer ${bearerToken}` }
-      });
-
-      if (res.status === 401) throw new Error('401');
-      if (!res.ok) return; // skip this room silently
-
-      const data = await res.json();
-      (data.value || []).forEach(ev => {
-        // Parse times — Graph returns UTC, convert to local
-        const s = new Date(ev.start.dateTime + (ev.start.timeZone === 'UTC' ? 'Z' : ''));
-        const e = new Date(ev.end.dateTime   + (ev.end.timeZone   === 'UTC' ? 'Z' : ''));
-        const hhmm = d => `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
-        results.push({ room: room.id, day: dow, start: hhmm(s), end: hhmm(e), title: ev.subject || '(No title)' });
-      });
-    }));
+    const res = await fetch(`${WORKER_URL}?date=${iso}`);
+    if (!res.ok) throw new Error(`Worker HTTP ${res.status}`);
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || 'Worker error');
+    return data.events;
   } catch (err) {
-    if (err.message === '401') {
-      bearerToken = null;
-      localStorage.removeItem('mrv_token');
-      setStatus('error', 'Token expired — paste a new one');
-      return null;
-    }
+    console.error('Worker poll failed:', err);
+    return null;
   }
-
-  return results;
-}
-
-async function connectWithToken() {
-  const input = document.getElementById('tokenInput').value.trim()
-    .replace(/^Bearer\s+/i, '');
-  if (!input) return;
-
-  bearerToken = input;
-  setStatus('loading', 'Fetching…');
-
-  const today = new Date();
-  const data  = await fetchLiveData(today);
-
-  if (data) {
-    LIVE_BOOKINGS = data;
-    localStorage.setItem('mrv_token', bearerToken);
-    document.getElementById('tokenInput').value = '';
-    setStatus('live', `Live · ${data.length} events`);
-    render();
-  }
-}
-
-function disconnect() {
-  bearerToken = null;
-  LIVE_BOOKINGS = null;
-  localStorage.removeItem('mrv_token');
-  setStatus('sample', 'Sample data');
-  render();
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -999,38 +872,45 @@ function hideTooltip() { tooltip.classList.remove('visible'); }
 
 // ── Nav ───────────────────────────────────────────────────────────────────────
 
-document.getElementById('prevDay').addEventListener('click', () => { dayOffset--; render(); });
-document.getElementById('nextDay').addEventListener('click', () => { dayOffset++; render(); });
-document.getElementById('todayBtn').addEventListener('click', () => { dayOffset = 0; render(); });
+async function navTo(offset) {
+  dayOffset = offset;
+  const date = addDays(new Date(), dayOffset);
+  const data = await fetchLiveData(date);
+  if (data) { LIVE_BOOKINGS = data; }
+  render();
+}
 
-document.getElementById('connectBtn').addEventListener('click', () => {
-  if (bearerToken) disconnect();
-  else connectWithToken();
-});
-
-document.getElementById('tokenInput').addEventListener('keydown', e => {
-  if (e.key === 'Enter') connectWithToken();
-});
+document.getElementById('prevDay').addEventListener('click', () => navTo(dayOffset - 1));
+document.getElementById('nextDay').addEventListener('click', () => navTo(dayOffset + 1));
+document.getElementById('todayBtn').addEventListener('click', () => navTo(0));
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 
 async function init() {
-  if (bearerToken) {
-    setStatus('loading', 'Restoring…');
-    const today = new Date();
-    const data  = await fetchLiveData(today);
-    if (data) {
-      LIVE_BOOKINGS = data;
-      setStatus('live', `Live · ${data.length} events`);
-    }
+  setStatus('loading', 'Connecting…');
+  render(); // show sample data immediately while fetching
+  const data = await fetchLiveData(new Date());
+  if (data) {
+    LIVE_BOOKINGS = data;
+    setStatus('live', `Live · ${data.length} events`);
   } else {
-    setStatus('sample', 'Sample data');
+    setStatus('error', 'Offline — showing sample data');
+  }
+  render();
+}
+
+async function refresh() {
+  const date = addDays(new Date(), dayOffset);
+  const data = await fetchLiveData(date);
+  if (data) {
+    LIVE_BOOKINGS = data;
+    setStatus('live', `Live · ${data.length} events`);
   }
   render();
 }
 
 init();
-setInterval(render, 60_000);
+setInterval(refresh, 60_000);
 </script>
 </body>
 </html>
