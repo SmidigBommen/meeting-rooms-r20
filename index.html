@@ -808,7 +808,7 @@ function buildCalendar(dow) {
       });
 
       block.innerHTML = `
-        <span class="bk-title">${b.title}</span>
+        <span class="bk-title">Busy</span>
         ${height > 30 ? `<span class="bk-time">${b.start} – ${b.end}</span>` : ''}`;
 
       block.addEventListener('mouseenter', e => showTooltip(e, b, room));
@@ -849,7 +849,7 @@ function scrollToNow() {
 const tooltip = document.getElementById('tooltip');
 
 function showTooltip(e, b, room) {
-  document.getElementById('tt-title').textContent = b.title;
+  document.getElementById('tt-title').textContent = 'Busy';
   document.getElementById('tt-dot').style.background = room.color;
   document.getElementById('tt-room').textContent = `${room.name} · cap. ${room.capacity}`;
   document.getElementById('tt-time').textContent = `${b.start} – ${b.end}`;
