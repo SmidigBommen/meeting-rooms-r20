@@ -86,6 +86,17 @@ async function fetchRoomEvents(token, room, startIso, endIso, dow) {
   });
 }
 
+const RATE_LIMIT = 10; // requests per minute per IP
+
+async function isRateLimited(env, ip) {
+  const minute = Math.floor(Date.now() / 60_000);
+  const key = `rate:${ip}:${minute}`;
+  const count = parseInt(await env.TOKEN_CACHE.get(key) || '0');
+  if (count >= RATE_LIMIT) return true;
+  await env.TOKEN_CACHE.put(key, String(count + 1), { expirationTtl: 90 });
+  return false;
+}
+
 export default {
   async fetch(request, env) {
     if (request.method === 'OPTIONS') {
@@ -94,6 +105,14 @@ export default {
 
     if (request.method !== 'GET') {
       return new Response('Method Not Allowed', { status: 405, headers: CORS_HEADERS });
+    }
+
+    const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
+    if (await isRateLimited(env, ip)) {
+      return new Response(JSON.stringify({ ok: false, error: 'Too many requests' }), {
+        status: 429,
+        headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
+      });
     }
 
     const url = new URL(request.url);
