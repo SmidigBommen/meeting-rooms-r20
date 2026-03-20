@@ -6,8 +6,10 @@ const ROOMS = [
   { id: 'lovelace', email: 'Moterom_Lovelace@soco.no' },
 ];
 
+const ALLOWED_ORIGIN = 'https://smidigbommen.github.io';
+
 const CORS_HEADERS = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': ALLOWED_ORIGIN,
   'Access-Control-Allow-Methods': 'GET, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type',
 };
