@@ -55,7 +55,7 @@ async function fetchRoomEvents(token, room, startIso, endIso, dow) {
   const url = new URL(`https://graph.microsoft.com/v1.0/users/${room.email}/calendarView`);
   url.searchParams.set('startDateTime', startIso);
   url.searchParams.set('endDateTime',   endIso);
-  url.searchParams.set('$select',       'subject,start,end');
+  url.searchParams.set('$select',       'start,end');
   url.searchParams.set('$top',          '50');
 
   const res = await fetch(url.toString(), {
@@ -81,7 +81,7 @@ async function fetchRoomEvents(token, room, startIso, endIso, dow) {
       day:   dow,
       start: hhmm(s),
       end:   hhmm(e),
-      title: ev.subject || '(No title)',
+      title: 'Busy',
     };
   });
 }
