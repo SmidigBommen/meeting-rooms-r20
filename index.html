@@ -1,0 +1,1036 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Meeting Rooms</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:        #0d0f1a;
+      --surface:   #13162a;
+      --surface2:  #181c30;
+      --surface3:  #1e2236;
+      --border:    rgba(255,255,255,0.06);
+      --border2:   rgba(255,255,255,0.03);
+      --text:      #e8eaf6;
+      --text-dim:  #6b7280;
+      --text-mute: #374151;
+      --accent:    #6366f1;
+      --accent2:   #818cf8;
+      --now:       #f43f5e;
+      --slot-h:    44px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { height: 100%; }
+
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 99px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.18); }
+
+    /* ── Header ─────────────────────────────────────────────────── */
+    header {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 28px;
+      height: 64px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      position: relative;
+      z-index: 20;
+    }
+
+    header::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--accent), transparent);
+      opacity: 0.4;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .logo-icon {
+      width: 32px; height: 32px;
+      background: linear-gradient(135deg, var(--accent), #a855f7);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 15px;
+      box-shadow: 0 0 16px rgba(99,102,241,0.4);
+    }
+
+    .logo-text h1 {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text);
+      letter-spacing: 0.2px;
+    }
+
+    .logo-text .date-sub {
+      font-size: 0.72rem;
+      font-weight: 400;
+      color: var(--text-dim);
+      margin-top: 1px;
+    }
+
+    /* ── Day nav ─────────────────────────────────────────────────── */
+    .day-nav {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 4px;
+    }
+
+    .nav-btn {
+      background: none;
+      border: none;
+      color: var(--text-dim);
+      width: 32px; height: 32px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 18px;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.15s;
+      font-family: inherit;
+    }
+
+    .nav-btn:hover { background: var(--surface3); color: var(--text); }
+
+    .day-label-nav {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text);
+      min-width: 200px;
+      text-align: center;
+      letter-spacing: 0.2px;
+    }
+
+    .today-btn {
+      background: var(--accent);
+      border: none;
+      color: white;
+      padding: 0 14px;
+      height: 32px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.78rem;
+      font-weight: 600;
+      font-family: inherit;
+      letter-spacing: 0.3px;
+      transition: all 0.15s;
+      box-shadow: 0 0 12px rgba(99,102,241,0.35);
+    }
+
+    .today-btn:hover {
+      background: var(--accent2);
+      box-shadow: 0 0 20px rgba(99,102,241,0.5);
+      transform: translateY(-1px);
+    }
+
+    /* ── Weekend banner ──────────────────────────────────────────── */
+    .weekend-banner {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      color: var(--text-dim);
+    }
+
+    .weekend-banner .icon { font-size: 3rem; }
+    .weekend-banner h2 { font-size: 1.1rem; font-weight: 600; color: var(--text); }
+    .weekend-banner p  { font-size: 0.85rem; }
+
+    /* ── Stats strip ─────────────────────────────────────────────── */
+    .stats-strip {
+      flex-shrink: 0;
+      display: flex;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      overflow-x: auto;
+    }
+
+    .stat-card {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 20px;
+      border-right: 1px solid var(--border);
+      flex: 1;
+      min-width: 140px;
+      transition: background 0.15s;
+    }
+
+    .stat-card:last-child { border-right: none; }
+    .stat-card:hover { background: var(--surface2); }
+
+    .stat-dot {
+      width: 10px; height: 10px;
+      border-radius: 3px;
+      flex-shrink: 0;
+    }
+
+    .stat-info { flex: 1; min-width: 0; }
+
+    .stat-name {
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--text);
+      letter-spacing: 0.3px;
+    }
+
+    .stat-meta {
+      font-size: 0.63rem;
+      color: var(--text-dim);
+      margin-top: 1px;
+    }
+
+    .stat-bar-wrap {
+      width: 52px;
+      height: 4px;
+      background: var(--surface3);
+      border-radius: 99px;
+      overflow: hidden;
+    }
+
+    .stat-bar {
+      height: 100%;
+      border-radius: 99px;
+    }
+
+    .stat-status {
+      font-size: 0.65rem;
+      font-weight: 600;
+      margin-top: 3px;
+      padding: 2px 7px;
+      border-radius: 99px;
+      display: inline-block;
+      letter-spacing: 0.2px;
+    }
+
+    /* ── Calendar ────────────────────────────────────────────────── */
+    .calendar-outer {
+      flex: 1;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      padding: 20px 28px;
+    }
+
+    .calendar-scroll {
+      flex: 1;
+      overflow: auto;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      box-shadow: inset 0 0 0 1px var(--border2), 0 4px 40px rgba(0,0,0,0.4);
+    }
+
+    .cal-grid {
+      display: grid;
+      min-width: 600px;
+    }
+
+    /* ── Room headers ────────────────────────────────────────────── */
+    .corner-cell {
+      background: var(--surface2);
+      border-right: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .room-hdr {
+      background: var(--surface2);
+      border-right: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 8px 10px;
+      text-align: center;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      transition: background 0.2s;
+    }
+
+    .room-hdr-accent {
+      height: 3px;
+      border-radius: 99px;
+      margin: 0 auto 8px;
+      width: 36px;
+    }
+
+    .room-hdr-name {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--text);
+      letter-spacing: 0.2px;
+    }
+
+    .room-hdr-cap {
+      font-size: 0.64rem;
+      color: var(--text-dim);
+      margin-top: 3px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+    }
+
+    /* ── Time column ─────────────────────────────────────────────── */
+    .time-col {
+      border-right: 1px solid var(--border);
+    }
+
+    .time-slot {
+      height: var(--slot-h);
+      display: flex;
+      align-items: flex-start;
+      justify-content: flex-end;
+      padding: 3px 10px 0 0;
+    }
+
+    .time-slot:not(.half) { border-top: 1px solid var(--border); }
+    .time-slot.half       { border-top: 1px dashed var(--border2); }
+
+    .time-label {
+      font-size: 0.6rem;
+      font-weight: 500;
+      color: var(--text-mute);
+      letter-spacing: 0.5px;
+      user-select: none;
+    }
+
+    /* ── Room body columns ───────────────────────────────────────── */
+    .room-col {
+      position: relative;
+      border-right: 1px solid var(--border);
+    }
+
+    .room-col:last-child { border-right: none; }
+
+    .slot-line {
+      height: var(--slot-h);
+    }
+
+    .slot-line.full { border-top: 1px solid var(--border); }
+    .slot-line.half { border-top: 1px dashed var(--border2); }
+
+    /* ── Booking blocks ──────────────────────────────────────────── */
+    .booking {
+      position: absolute;
+      left: 5px;
+      right: 5px;
+      border-radius: 8px;
+      padding: 6px 9px;
+      z-index: 2;
+      cursor: default;
+      overflow: hidden;
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+
+    .booking:hover {
+      transform: scale(1.025) translateY(-1px);
+      box-shadow: 0 10px 28px rgba(0,0,0,0.45) !important;
+      z-index: 20;
+    }
+
+    .bk-title {
+      display: block;
+      font-size: 0.72rem;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      line-height: 1.3;
+    }
+
+    .bk-time {
+      display: block;
+      font-size: 0.62rem;
+      font-weight: 400;
+      opacity: 0.65;
+      margin-top: 2px;
+      line-height: 1.2;
+    }
+
+    /* ── Now line ────────────────────────────────────────────────── */
+    .now-line {
+      position: absolute;
+      left: 0; right: 0;
+      height: 2px;
+      background: var(--now);
+      z-index: 15;
+      pointer-events: none;
+    }
+
+    .now-line::before {
+      content: '';
+      position: absolute;
+      left: -3px; top: -4px;
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: var(--now);
+      box-shadow: 0 0 8px var(--now);
+      animation: pulse-now 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse-now {
+      0%, 100% { box-shadow: 0 0 6px var(--now); transform: scale(1); }
+      50%       { box-shadow: 0 0 16px var(--now); transform: scale(1.35); }
+    }
+
+    /* ── Tooltip ─────────────────────────────────────────────────── */
+    .tooltip {
+      position: fixed;
+      background: #1e2236;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: 0.75rem;
+      pointer-events: none;
+      z-index: 9999;
+      opacity: 0;
+      transform: translateY(4px);
+      transition: opacity 0.15s, transform 0.15s;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+      min-width: 160px;
+    }
+
+    .tooltip.visible { opacity: 1; transform: translateY(0); }
+
+    .tt-title { font-weight: 600; color: var(--text); margin-bottom: 5px; font-size: 0.8rem; }
+
+    .tt-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--text-dim);
+      font-size: 0.7rem;
+      margin-top: 3px;
+    }
+
+    .tt-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+
+    /* ── Connect panel ───────────────────────────────────────────── */
+    .connect-bar {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 28px;
+      background: var(--surface2);
+      border-bottom: 1px solid var(--border);
+      font-size: 0.75rem;
+    }
+
+    .connect-bar.connected {
+      background: rgba(16,185,129,0.06);
+      border-bottom-color: rgba(16,185,129,0.15);
+    }
+
+    .connect-label {
+      color: var(--text-dim);
+      white-space: nowrap;
+    }
+
+    .connect-input {
+      flex: 1;
+      background: var(--surface3);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      padding: 5px 10px;
+      color: var(--text);
+      font-size: 0.72rem;
+      font-family: monospace;
+      outline: none;
+      min-width: 0;
+      transition: border-color 0.15s;
+    }
+
+    .connect-input:focus { border-color: var(--accent); }
+    .connect-input::placeholder { color: var(--text-mute); }
+
+    .connect-btn {
+      background: var(--accent);
+      border: none;
+      color: white;
+      padding: 5px 14px;
+      border-radius: 7px;
+      cursor: pointer;
+      font-size: 0.72rem;
+      font-weight: 600;
+      font-family: inherit;
+      white-space: nowrap;
+      transition: background 0.15s;
+    }
+
+    .connect-btn:hover { background: var(--accent2); }
+    .connect-btn.disconnect { background: rgba(244,63,94,0.2); color: #f43f5e; }
+    .connect-btn.disconnect:hover { background: rgba(244,63,94,0.35); }
+
+    .connect-status {
+      font-size: 0.7rem;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .status-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--text-mute);
+    }
+
+    .status-dot.live   { background: #10b981; box-shadow: 0 0 6px #10b981; }
+    .status-dot.sample { background: var(--text-mute); }
+    .status-dot.error  { background: #f43f5e; }
+    .status-dot.loading { background: #f59e0b; animation: pulse-dot 1s infinite; }
+
+    @keyframes pulse-dot {
+      0%,100% { opacity: 1; } 50% { opacity: 0.3; }
+    }
+
+    /* ── Animations ──────────────────────────────────────────────── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(5px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .booking { animation: fadeUp 0.2s ease both; }
+  </style>
+</head>
+<body>
+
+<div class="tooltip" id="tooltip">
+  <div class="tt-title" id="tt-title"></div>
+  <div class="tt-row"><div class="tt-dot" id="tt-dot"></div><span id="tt-room"></span></div>
+  <div class="tt-row"><span>🕐</span><span id="tt-time"></span></div>
+  <div class="tt-row"><span>⏱</span><span id="tt-dur"></span></div>
+</div>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">📅</div>
+    <div class="logo-text">
+      <h1>Meeting Rooms</h1>
+      <div class="date-sub" id="dateSubtitle"></div>
+    </div>
+  </div>
+  <div class="day-nav">
+    <button class="nav-btn" id="prevDay" title="Previous day">‹</button>
+    <div class="day-label-nav" id="dayLabel"></div>
+    <button class="nav-btn" id="nextDay" title="Next day">›</button>
+    <button class="today-btn" id="todayBtn">Today</button>
+  </div>
+</header>
+
+<div class="connect-bar" id="connectBar">
+  <span class="connect-label">Graph token</span>
+  <input class="connect-input" id="tokenInput" type="password"
+    placeholder="Paste Bearer token from OWA network tab…" autocomplete="off" spellcheck="false">
+  <button class="connect-btn" id="connectBtn">Connect</button>
+  <div class="connect-status">
+    <div class="status-dot sample" id="statusDot"></div>
+    <span id="statusText">Sample data</span>
+  </div>
+</div>
+
+<div class="stats-strip" id="statsStrip"></div>
+
+<div class="calendar-outer" id="calOuter">
+  <div class="calendar-scroll" id="calScroll">
+    <div class="cal-grid" id="calGrid"></div>
+  </div>
+</div>
+
+<script>
+// ── Config ────────────────────────────────────────────────────────────────────
+
+const ROOMS = [
+  { id:'easley',   name:'Easley',   email:'Moterom_Easley@soco.no',   capacity:4,  color:'#6366f1', textColor:'#c7d2fe', bgColor:'rgba(99,102,241,0.14)',  shadow:'rgba(99,102,241,0.3)' },
+  { id:'hopper',   name:'Hopper',   email:'Moterom_Hopper@soco.no',   capacity:6,  color:'#a855f7', textColor:'#e9d5ff', bgColor:'rgba(168,85,247,0.14)', shadow:'rgba(168,85,247,0.3)' },
+  { id:'torvalds', name:'Torvalds', email:'Moterom_Torvalds@soco.no', capacity:10, color:'#10b981', textColor:'#a7f3d0', bgColor:'rgba(16,185,129,0.14)', shadow:'rgba(16,185,129,0.3)' },
+  { id:'turing',   name:'Turing',   email:'Moterom_Turing@soco.no',   capacity:8,  color:'#f59e0b', textColor:'#fde68a', bgColor:'rgba(245,158,11,0.14)', shadow:'rgba(245,158,11,0.3)'  },
+  { id:'lovelace', name:'Lovelace', email:'Moterom_Lovelace@soco.no', capacity:20, color:'#f43f5e', textColor:'#fecdd3', bgColor:'rgba(244,63,94,0.14)',  shadow:'rgba(244,63,94,0.3)'   },
+];
+
+const START_HOUR  = 8;
+const END_HOUR    = 19;
+const TOTAL_SLOTS = (END_HOUR - START_HOUR) * 2;
+const SLOT_PX     = 44;
+
+// Sample bookings (used when no live token is set). day: JS getDay() 0=Sun…6=Sat
+const SAMPLE_BOOKINGS = [
+  { room:'easley',   day:1, start:'09:00', end:'10:00', title:'Standup' },
+  { room:'easley',   day:1, start:'14:00', end:'15:30', title:'Design Review' },
+  { room:'easley',   day:2, start:'10:00', end:'11:00', title:'1-on-1' },
+  { room:'easley',   day:3, start:'09:00', end:'09:30', title:'Sync' },
+  { room:'easley',   day:4, start:'13:00', end:'14:00', title:'Planning' },
+  { room:'easley',   day:5, start:'11:00', end:'12:00', title:'Demo Prep' },
+
+  { room:'hopper',   day:1, start:'10:00', end:'11:30', title:'Product Review' },
+  { room:'hopper',   day:2, start:'09:00', end:'10:00', title:'Team Standup' },
+  { room:'hopper',   day:2, start:'14:00', end:'16:00', title:'Roadmap Session' },
+  { room:'hopper',   day:3, start:'11:00', end:'12:00', title:'UX Workshop' },
+  { room:'hopper',   day:4, start:'10:00', end:'11:00', title:'Backlog Grooming' },
+  { room:'hopper',   day:5, start:'15:00', end:'16:00', title:'Retro' },
+
+  { room:'torvalds', day:1, start:'08:00', end:'09:00', title:'All-Hands' },
+  { room:'torvalds', day:1, start:'13:00', end:'14:30', title:'Engineering Sync' },
+  { room:'torvalds', day:2, start:'10:30', end:'12:00', title:'Architecture Review' },
+  { room:'torvalds', day:3, start:'14:00', end:'15:00', title:'Sprint Planning' },
+  { room:'torvalds', day:4, start:'09:00', end:'10:30', title:'Hiring Panel' },
+  { room:'torvalds', day:4, start:'15:00', end:'17:00', title:'Quarterly Review' },
+  { room:'torvalds', day:5, start:'10:00', end:'11:00', title:'Tech Talk' },
+
+  { room:'turing',   day:1, start:'11:00', end:'12:00', title:'Client Call' },
+  { room:'turing',   day:2, start:'09:00', end:'10:00', title:'Sales Sync' },
+  { room:'turing',   day:2, start:'13:00', end:'14:00', title:'Partner Meeting' },
+  { room:'turing',   day:3, start:'10:00', end:'11:30', title:'Strategy Session' },
+  { room:'turing',   day:4, start:'11:00', end:'12:00', title:'Demo' },
+  { room:'turing',   day:5, start:'09:00', end:'10:00', title:'Weekly Review' },
+  { room:'turing',   day:5, start:'14:00', end:'15:30', title:'Finance Review' },
+
+  { room:'lovelace', day:1, start:'09:00', end:'11:00', title:'Board Meeting' },
+  { room:'lovelace', day:2, start:'14:00', end:'15:00', title:'Investor Update' },
+  { room:'lovelace', day:3, start:'09:00', end:'10:00', title:'Company All-Hands' },
+  { room:'lovelace', day:3, start:'13:00', end:'14:00', title:'Leadership Sync' },
+  { room:'lovelace', day:4, start:'10:00', end:'12:00', title:'Offsite Planning' },
+  { room:'lovelace', day:5, start:'15:00', end:'18:00', title:'Town Hall' },
+];
+
+// Live bookings — populated by fetchLiveData(), otherwise falls back to SAMPLE_BOOKINGS
+let LIVE_BOOKINGS = null;
+
+const BOOKINGS_FOR = dow =>
+  (LIVE_BOOKINGS || SAMPLE_BOOKINGS).filter(b => b.day === dow);
+
+// ── State ─────────────────────────────────────────────────────────────────────
+
+let dayOffset = 0;
+let bearerToken = localStorage.getItem('mrv_token') || null;
+
+// ── Graph API ─────────────────────────────────────────────────────────────────
+
+function setStatus(state, text) {
+  const dot  = document.getElementById('statusDot');
+  const span = document.getElementById('statusText');
+  const bar  = document.getElementById('connectBar');
+  dot.className  = `status-dot ${state}`;
+  span.textContent = text;
+  bar.className  = state === 'live' ? 'connect-bar connected' : 'connect-bar';
+  const btn = document.getElementById('connectBtn');
+  if (state === 'live') {
+    btn.textContent = 'Disconnect';
+    btn.className = 'connect-btn disconnect';
+  } else {
+    btn.textContent = 'Connect';
+    btn.className = 'connect-btn';
+  }
+}
+
+async function fetchLiveData(date) {
+  if (!bearerToken) return null;
+
+  const start = new Date(date); start.setHours(0, 0, 0, 0);
+  const end   = new Date(date); end.setHours(23, 59, 59, 0);
+  const fmt   = d => d.toISOString().replace(/\.\d+Z$/, '');
+  const dow   = date.getDay();
+
+  const results = [];
+
+  try {
+    await Promise.all(ROOMS.map(async room => {
+      const url = `https://graph.microsoft.com/v1.0/users/${room.email}/calendarView` +
+        `?startDateTime=${fmt(start)}&endDateTime=${fmt(end)}` +
+        `&$select=subject,start,end&$top=50`;
+
+      const res = await fetch(url, {
+        headers: { Authorization: `Bearer ${bearerToken}` }
+      });
+
+      if (res.status === 401) throw new Error('401');
+      if (!res.ok) return; // skip this room silently
+
+      const data = await res.json();
+      (data.value || []).forEach(ev => {
+        // Parse times — Graph returns UTC, convert to local
+        const s = new Date(ev.start.dateTime + (ev.start.timeZone === 'UTC' ? 'Z' : ''));
+        const e = new Date(ev.end.dateTime   + (ev.end.timeZone   === 'UTC' ? 'Z' : ''));
+        const hhmm = d => `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+        results.push({ room: room.id, day: dow, start: hhmm(s), end: hhmm(e), title: ev.subject || '(No title)' });
+      });
+    }));
+  } catch (err) {
+    if (err.message === '401') {
+      bearerToken = null;
+      localStorage.removeItem('mrv_token');
+      setStatus('error', 'Token expired — paste a new one');
+      return null;
+    }
+  }
+
+  return results;
+}
+
+async function connectWithToken() {
+  const input = document.getElementById('tokenInput').value.trim()
+    .replace(/^Bearer\s+/i, '');
+  if (!input) return;
+
+  bearerToken = input;
+  setStatus('loading', 'Fetching…');
+
+  const today = new Date();
+  const data  = await fetchLiveData(today);
+
+  if (data) {
+    LIVE_BOOKINGS = data;
+    localStorage.setItem('mrv_token', bearerToken);
+    document.getElementById('tokenInput').value = '';
+    setStatus('live', `Live · ${data.length} events`);
+    render();
+  }
+}
+
+function disconnect() {
+  bearerToken = null;
+  LIVE_BOOKINGS = null;
+  localStorage.removeItem('mrv_token');
+  setStatus('sample', 'Sample data');
+  render();
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+const addDays = (d, n) => { const r = new Date(d); r.setDate(r.getDate() + n); return r; };
+
+const startOfDay = d => { const r = new Date(d); r.setHours(0,0,0,0); return r; };
+
+const timeFrac = hhmm => {
+  const [h, m] = hhmm.split(':').map(Number);
+  return (h - START_HOUR) + m / 60;
+};
+
+const timePx = hhmm => timeFrac(hhmm) * SLOT_PX * 2;
+
+const el = (tag, cls, styles) => {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (styles) Object.assign(e.style, styles);
+  return e;
+};
+
+const DAY_NAMES_LONG  = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const DAY_NAMES_SHORT = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+// ── Render ────────────────────────────────────────────────────────────────────
+
+function render() {
+  const todayBase = startOfDay(new Date());
+  const current   = startOfDay(addDays(todayBase, dayOffset));
+  const isToday   = dayOffset === 0;
+  const dow       = current.getDay(); // 0=Sun, 6=Sat
+  const isWeekend = dow === 0 || dow === 6;
+
+  // Header labels
+  const longLabel = `${DAY_NAMES_LONG[dow]}, ${MONTHS[current.getMonth()]} ${current.getDate()}, ${current.getFullYear()}`;
+  document.getElementById('dayLabel').textContent =
+    `${DAY_NAMES_SHORT[dow]}, ${MONTHS[current.getMonth()]} ${current.getDate()}`;
+  document.getElementById('dateSubtitle').textContent =
+    isToday ? 'Today' : longLabel;
+
+  renderStats(dow);
+
+  const outer = document.getElementById('calOuter');
+
+  if (isWeekend) {
+    // Show weekend message instead of grid
+    document.getElementById('calScroll').style.display = 'none';
+    let banner = document.getElementById('weekendBanner');
+    if (!banner) {
+      banner = el('div', 'weekend-banner');
+      banner.id = 'weekendBanner';
+      outer.appendChild(banner);
+    }
+    banner.style.display = 'flex';
+    banner.innerHTML = `
+      <div class="icon">🌿</div>
+      <h2>No meetings today</h2>
+      <p>${DAY_NAMES_LONG[dow]} is a day off. Enjoy the weekend!</p>`;
+  } else {
+    document.getElementById('calScroll').style.display = '';
+    const banner = document.getElementById('weekendBanner');
+    if (banner) banner.style.display = 'none';
+    buildCalendar(dow);
+  }
+}
+
+// ── Stats ─────────────────────────────────────────────────────────────────────
+
+function roomStatus(bookings, dow) {
+  // Returns { busy, label } for the current moment on `dow`.
+  // On non-today days, returns null (no live status).
+  if (dayOffset !== 0) return null;
+
+  const now = new Date();
+  const nowMins = now.getHours() * 60 + now.getMinutes();
+
+  // Sort bookings by start time
+  const sorted = [...bookings].sort((a, b) => a.start.localeCompare(b.start));
+
+  // Check if currently inside a booking
+  for (const b of sorted) {
+    const [sh, sm] = b.start.split(':').map(Number);
+    const [eh, em] = b.end.split(':').map(Number);
+    const startMins = sh * 60 + sm;
+    const endMins   = eh * 60 + em;
+    if (nowMins >= startMins && nowMins < endMins) {
+      return { busy: true, label: `Busy until ${b.end}` };
+    }
+  }
+
+  // Find next upcoming booking
+  for (const b of sorted) {
+    const [sh, sm] = b.start.split(':').map(Number);
+    const startMins = sh * 60 + sm;
+    if (startMins > nowMins) {
+      return { busy: false, label: `Free until ${b.start}` };
+    }
+  }
+
+  // No more bookings today
+  return { busy: false, label: 'Free for the rest of the day' };
+}
+
+function renderStats(dow) {
+  const strip = document.getElementById('statsStrip');
+  strip.innerHTML = '';
+  const dayHours = END_HOUR - START_HOUR;
+
+  ROOMS.forEach(room => {
+    const todayBookings = BOOKINGS_FOR(dow).filter(b => b.room === room.id);
+    const bookedH = todayBookings.reduce((s, b) => s + timeFrac(b.end) - timeFrac(b.start), 0);
+    const pct = Math.round((bookedH / dayHours) * 100);
+    const status = roomStatus(todayBookings, dow);
+
+    const card = el('div', 'stat-card');
+
+    let statusHtml = '';
+    if (status) {
+      const color  = status.busy ? '#f43f5e' : '#10b981';
+      const bgColor = status.busy ? 'rgba(244,63,94,0.12)' : 'rgba(16,185,129,0.12)';
+      const dot    = status.busy ? '🔴' : '🟢';
+      statusHtml = `<div class="stat-status" style="color:${color};background:${bgColor};">${dot} ${status.label}</div>`;
+    }
+
+    card.innerHTML = `
+      <div class="stat-dot" style="background:${room.color}"></div>
+      <div class="stat-info">
+        <div class="stat-name">${room.name}</div>
+        ${statusHtml}
+      </div>
+      <div>
+        <div class="stat-bar-wrap">
+          <div class="stat-bar" style="width:${pct}%;background:${room.color}"></div>
+        </div>
+        <div style="font-size:0.6rem;color:var(--text-dim);text-align:right;margin-top:2px">${pct}% booked</div>
+      </div>`;
+    strip.appendChild(card);
+  });
+}
+
+// ── Calendar grid ─────────────────────────────────────────────────────────────
+
+function buildCalendar(dow) {
+  const grid = document.getElementById('calGrid');
+  grid.innerHTML = '';
+  grid.style.gridTemplateColumns = `52px repeat(${ROOMS.length}, 1fr)`;
+
+  // booking lookup for today
+  const todayMap = {};
+  ROOMS.forEach(r => { todayMap[r.id] = []; });
+  BOOKINGS_FOR(dow).forEach(b => { if (todayMap[b.room]) todayMap[b.room].push(b); });
+
+  // ── Room header row ────────────────────────────────────────────────────────
+  grid.appendChild(el('div', 'corner-cell'));
+
+  ROOMS.forEach(room => {
+    const h = el('div', 'room-hdr');
+    h.innerHTML = `
+      <div class="room-hdr-accent" style="background:${room.color};box-shadow:0 0 8px ${room.shadow}"></div>
+      <div class="room-hdr-name">${room.name}</div>
+      <div class="room-hdr-cap">
+        <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        cap. ${room.capacity}
+      </div>`;
+    grid.appendChild(h);
+  });
+
+  // ── Time column ────────────────────────────────────────────────────────────
+  const timeCol = el('div', 'time-col');
+  for (let s = 0; s < TOTAL_SLOTS; s++) {
+    const hour = START_HOUR + Math.floor(s / 2);
+    const isHalf = s % 2 === 1;
+    const slot = el('div', `time-slot${isHalf ? ' half' : ''}`);
+    if (!isHalf) {
+      const lbl = el('span', 'time-label');
+      lbl.textContent = `${String(hour).padStart(2,'0')}:00`;
+      slot.appendChild(lbl);
+    }
+    timeCol.appendChild(slot);
+  }
+  grid.appendChild(timeCol);
+
+  // ── Room columns ────────────────────────────────────────────────────────────
+  ROOMS.forEach(room => {
+    const col = el('div', 'room-col');
+
+    // Slot grid lines
+    for (let s = 0; s < TOTAL_SLOTS; s++) {
+      col.appendChild(el('div', `slot-line ${s % 2 === 0 ? 'full' : 'half'}`));
+    }
+
+    // Bookings
+    todayMap[room.id].forEach((b, i) => {
+      const top    = timePx(b.start);
+      const height = timePx(b.end) - top;
+
+      const block = el('div', 'booking', {
+        top:          `${top + 2}px`,
+        height:       `${Math.max(height - 4, 22)}px`,
+        background:   room.bgColor,
+        border:       `1px solid ${room.color}35`,
+        boxShadow:    `0 2px 10px ${room.shadow}30`,
+        color:        room.textColor,
+        animationDelay: `${i * 35}ms`,
+      });
+
+      block.innerHTML = `
+        <span class="bk-title">${b.title}</span>
+        ${height > 30 ? `<span class="bk-time">${b.start} – ${b.end}</span>` : ''}`;
+
+      block.addEventListener('mouseenter', e => showTooltip(e, b, room));
+      block.addEventListener('mousemove',  e => moveTooltip(e));
+      block.addEventListener('mouseleave', hideTooltip);
+
+      col.appendChild(block);
+    });
+
+    // Now line (always shown on visible day)
+    const now = new Date();
+    const nowFrac = (now.getHours() - START_HOUR) + now.getMinutes() / 60;
+    if (dayOffset === 0 && nowFrac >= 0 && nowFrac <= END_HOUR - START_HOUR) {
+      const line = el('div', 'now-line', { top: `${nowFrac * SLOT_PX * 2}px` });
+      col.appendChild(line);
+    }
+
+    grid.appendChild(col);
+  });
+
+  // Scroll to put current time (or 8am) near the top
+  scrollToNow();
+}
+
+function scrollToNow() {
+  const scroll = document.getElementById('calScroll');
+  let targetPx = 0;
+  if (dayOffset === 0) {
+    const now = new Date();
+    const frac = (now.getHours() - START_HOUR) + now.getMinutes() / 60;
+    targetPx = Math.max(0, frac * SLOT_PX * 2 - 80);
+  }
+  scroll.scrollTop = targetPx;
+}
+
+// ── Tooltip ───────────────────────────────────────────────────────────────────
+
+const tooltip = document.getElementById('tooltip');
+
+function showTooltip(e, b, room) {
+  document.getElementById('tt-title').textContent = b.title;
+  document.getElementById('tt-dot').style.background = room.color;
+  document.getElementById('tt-room').textContent = `${room.name} · cap. ${room.capacity}`;
+  document.getElementById('tt-time').textContent = `${b.start} – ${b.end}`;
+  const dur = timeFrac(b.end) - timeFrac(b.start);
+  document.getElementById('tt-dur').textContent = `${dur}h`;
+  tooltip.classList.add('visible');
+  moveTooltip(e);
+}
+
+function moveTooltip(e) {
+  const pad = 14, tw = tooltip.offsetWidth || 180, th = tooltip.offsetHeight || 100;
+  let x = e.clientX + pad, y = e.clientY + pad;
+  if (x + tw > window.innerWidth)  x = e.clientX - tw - pad;
+  if (y + th > window.innerHeight) y = e.clientY - th - pad;
+  tooltip.style.left = `${x}px`;
+  tooltip.style.top  = `${y}px`;
+}
+
+function hideTooltip() { tooltip.classList.remove('visible'); }
+
+// ── Nav ───────────────────────────────────────────────────────────────────────
+
+document.getElementById('prevDay').addEventListener('click', () => { dayOffset--; render(); });
+document.getElementById('nextDay').addEventListener('click', () => { dayOffset++; render(); });
+document.getElementById('todayBtn').addEventListener('click', () => { dayOffset = 0; render(); });
+
+document.getElementById('connectBtn').addEventListener('click', () => {
+  if (bearerToken) disconnect();
+  else connectWithToken();
+});
+
+document.getElementById('tokenInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') connectWithToken();
+});
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+
+async function init() {
+  if (bearerToken) {
+    setStatus('loading', 'Restoring…');
+    const today = new Date();
+    const data  = await fetchLiveData(today);
+    if (data) {
+      LIVE_BOOKINGS = data;
+      setStatus('live', `Live · ${data.length} events`);
+    }
+  } else {
+    setStatus('sample', 'Sample data');
+  }
+  render();
+}
+
+init();
+setInterval(render, 60_000);
+</script>
+</body>
+</html>
