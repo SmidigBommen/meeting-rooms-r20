@@ -584,7 +584,6 @@
     <div class="logo-icon">📅</div>
     <div class="logo-text">
       <h1>Meeting Rooms</h1>
-      <div class="date-sub" id="dateSubtitle"></div>
       <div class="header-status">
         <div class="status-dot loading" id="statusDot"></div>
         <span id="statusText">Connecting…</span>
@@ -733,8 +732,6 @@ function render() {
   const longLabel = `${DAY_NAMES_LONG[dow]}, ${MONTHS[current.getMonth()]} ${current.getDate()}, ${current.getFullYear()}`;
   document.getElementById('dayLabel').textContent =
     `${DAY_NAMES_SHORT[dow]}, ${MONTHS[current.getMonth()]} ${current.getDate()}`;
-  document.getElementById('dateSubtitle').textContent =
-    isToday ? 'Today' : longLabel;
 
   renderStats(dow);
 
