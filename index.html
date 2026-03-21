@@ -24,6 +24,21 @@
       --slot-h:    44px;
     }
 
+    body[data-theme="light"] {
+      --bg:        #f0f2f8;
+      --surface:   #ffffff;
+      --surface2:  #e8eaf6;
+      --surface3:  #dde0f0;
+      --border:    rgba(0,0,0,0.08);
+      --border2:   rgba(0,0,0,0.04);
+      --text:      #1a1d2e;
+      --text-dim:  #6b7280;
+      --text-mute: #9ca3af;
+      --accent:    #6366f1;
+      --accent2:   #4f46e5;
+      --now:       #f43f5e;
+    }
+
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html { height: 100%; }
 
@@ -106,6 +121,22 @@
       color: var(--text-dim);
       margin-top: 1px;
     }
+
+    /* ── Theme toggle ────────────────────────────────────────────── */
+    .theme-btn {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      width: 32px; height: 32px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.15s;
+      flex-shrink: 0;
+    }
+
+    .theme-btn:hover { background: var(--surface2); color: var(--text); }
 
     /* ── Day nav ─────────────────────────────────────────────────── */
     .day-nav {
@@ -590,6 +621,7 @@
       </div>
     </div>
   </div>
+  <button class="theme-btn" id="themeBtn" title="Toggle light/dark mode">🌙</button>
   <div class="day-nav">
     <button class="nav-btn" id="prevDay" title="Previous day">‹</button>
     <div class="day-label-nav" id="dayLabel"></div>
@@ -1043,6 +1075,20 @@ async function navTo(offset) {
 document.getElementById('prevDay').addEventListener('click', () => navTo(dayOffset - 1));
 document.getElementById('nextDay').addEventListener('click', () => navTo(dayOffset + 1));
 document.getElementById('todayBtn').addEventListener('click', () => navTo(0));
+
+// ── Theme toggle ──────────────────────────────────────────────────────────────
+
+function applyTheme(theme) {
+  document.body.dataset.theme = theme;
+  document.getElementById('themeBtn').textContent = theme === 'light' ? '🌙' : '☀️';
+  localStorage.setItem('mrv_theme', theme);
+}
+
+document.getElementById('themeBtn').addEventListener('click', () => {
+  applyTheme(document.body.dataset.theme === 'light' ? 'dark' : 'light');
+});
+
+applyTheme(localStorage.getItem('mrv_theme') || 'dark');
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 
