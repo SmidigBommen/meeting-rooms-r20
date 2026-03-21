@@ -895,6 +895,11 @@ function buildRoomCol(room, bookings) {
     col.appendChild(el('div', `slot-line ${s % 2 === 0 ? 'full' : 'half'}`));
   }
 
+  const isLight = document.body.dataset.theme === 'light';
+  const blockBg    = isLight ? room.bgColor.replace('0.14', '0.25') : room.bgColor;
+  const blockColor = isLight ? room.color : room.textColor;
+  const blockBorder = isLight ? `1px solid ${room.color}60` : `1px solid ${room.color}35`;
+
   bookings.forEach((b, i) => {
     const top    = timePx(b.start);
     const height = timePx(b.end) - top;
@@ -902,10 +907,10 @@ function buildRoomCol(room, bookings) {
     const block = el('div', 'booking', {
       top:            `${top + 2}px`,
       height:         `${Math.max(height - 4, 22)}px`,
-      background:     room.bgColor,
-      border:         `1px solid ${room.color}35`,
+      background:     blockBg,
+      border:         blockBorder,
       boxShadow:      `0 2px 10px ${room.shadow}30`,
-      color:          room.textColor,
+      color:          blockColor,
       animationDelay: `${i * 35}ms`,
     });
 
