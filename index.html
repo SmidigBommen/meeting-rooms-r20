@@ -486,16 +486,13 @@
 
     .tt-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
 
-    /* ── Status bar ──────────────────────────────────────────────── */
-    .status-bar {
-      flex-shrink: 0;
+    /* ── Header status ───────────────────────────────────────────── */
+    .header-status {
       display: flex;
       align-items: center;
-      gap: 8px;
-      padding: 6px 28px;
-      background: var(--surface2);
-      border-bottom: 1px solid var(--border);
-      font-size: 0.7rem;
+      gap: 5px;
+      margin-top: 2px;
+      font-size: 0.68rem;
       color: var(--text-dim);
     }
 
@@ -588,6 +585,10 @@
     <div class="logo-text">
       <h1>Meeting Rooms</h1>
       <div class="date-sub" id="dateSubtitle"></div>
+      <div class="header-status">
+        <div class="status-dot loading" id="statusDot"></div>
+        <span id="statusText">Connecting…</span>
+      </div>
     </div>
   </div>
   <div class="day-nav">
@@ -597,11 +598,6 @@
     <button class="today-btn" id="todayBtn">Today</button>
   </div>
 </header>
-
-<div class="status-bar">
-  <div class="status-dot loading" id="statusDot"></div>
-  <span id="statusText">Connecting…</span>
-</div>
 
 <div class="stats-strip" id="statsStrip"></div>
 
