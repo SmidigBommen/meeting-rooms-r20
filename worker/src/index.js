@@ -72,29 +72,28 @@ async function fetchRoomEvents(token, room, startIso, endIso, dow) {
 
   const data = await res.json();
 
-  return (data.value || []).map(ev => {
-    const s = new Date(ev.start.dateTime + 'Z');
-    const e = new Date(ev.end.dateTime   + 'Z');
-    const hhmm = d => `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
-    return {
-      room:  room.id,
-      day:   dow,
-      start: hhmm(s),
-      end:   hhmm(e),
-      title: 'Busy',
-    };
+  const fmt = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Europe/Oslo',
+    hour:     '2-digit',
+    minute:   '2-digit',
+    hour12:   false,
   });
-}
 
-const RATE_LIMIT = 10; // requests per minute per IP
+  const toOsloHHMM = dateTimeUtc => {
+    const d = new Date(dateTimeUtc + 'Z');
+    const parts = fmt.formatToParts(d);
+    const h = parts.find(p => p.type === 'hour').value.padStart(2, '0');
+    const m = parts.find(p => p.type === 'minute').value.padStart(2, '0');
+    return `${h}:${m}`;
+  };
 
-async function isRateLimited(env, ip) {
-  const minute = Math.floor(Date.now() / 60_000);
-  const key = `rate:${ip}:${minute}`;
-  const count = parseInt(await env.TOKEN_CACHE.get(key) || '0');
-  if (count >= RATE_LIMIT) return true;
-  await env.TOKEN_CACHE.put(key, String(count + 1), { expirationTtl: 90 });
-  return false;
+  return (data.value || []).map(ev => ({
+    room:  room.id,
+    day:   dow,
+    start: toOsloHHMM(ev.start.dateTime),
+    end:   toOsloHHMM(ev.end.dateTime),
+    title: 'Busy',
+  }));
 }
 
 export default {
@@ -105,14 +104,6 @@ export default {
 
     if (request.method !== 'GET') {
       return new Response('Method Not Allowed', { status: 405, headers: CORS_HEADERS });
-    }
-
-    const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
-    if (await isRateLimited(env, ip)) {
-      return new Response(JSON.stringify({ ok: false, error: 'Too many requests' }), {
-        status: 429,
-        headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
-      });
     }
 
     const url = new URL(request.url);
